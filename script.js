@@ -3,6 +3,7 @@
   const $ = (s, root=document) => root.querySelector(s);
   const $$ = (s, root=document) => [...root.querySelectorAll(s)];
   const pages = $$(".page");
+  const voice = $("#voiceAudio");
   const pageNames = ["The cover","A few words","The handwritten letter","Songs in the margins","The little archive","A small study of you","A voice between pages","The surprise"];
   let current = 0;
   let navigationReady = false;
@@ -35,6 +36,9 @@
     if(shouldAnimate){oldRect=oldPage.getBoundingClientRect();bookRect=$("#book").getBoundingClientRect();}
     pages.forEach((p,i)=>{p.classList.toggle("active",i===index);p.setAttribute("aria-hidden",i!==index?"true":"false")});
     current=index;
+    // Do not let the voice note keep playing under another chapter. Its pause event
+    // coordinates the background-song resume without resetting the saved position.
+    if(oldIndex===6 && index!==6 && voice && !voice.paused) voice.pause();
     $("#prevPage").disabled=index===0; $("#nextPage").disabled=index===pages.length-1;
     $("#navTitle").textContent=pageNames[index];
     $("#pageCounter").textContent=(index===0?"Cover":`Page ${index}`)+` · ${index+1} / ${pages.length}`;
@@ -118,6 +122,7 @@
   });
   const backgroundAudio=$("#violinAudio"), backgroundButton=$("#violinButton"), soundToggle=$("#soundToggle"), wave=$(".sound-wave");
   let resumeBackgroundAfterPlaylist=false;
+  let resumeBackgroundAfterVoice=false;
   backgroundAudio.volume=0.42;
   function updateBackgroundAudioUi(isPlaying){
     backgroundButton.textContent=isPlaying?"Ⅱ":"▶";
@@ -127,6 +132,10 @@
   }
   function startBackgroundSong(){
     if(current===3)return;
+    if(voice && !voice.paused){
+      toast("The background song will resume when your voice note pauses or finishes.");
+      return;
+    }
     if(!backgroundAudio.getAttribute("src")){
       $("#backgroundAudioStatus").textContent="The background song file could not be found.";
       return;
@@ -141,8 +150,9 @@
     });
   }
   function stopBackgroundSongForPlaylist(){
-    // pause() preserves currentTime, so playback can resume at this exact position later.
-    resumeBackgroundAfterPlaylist=!backgroundAudio.paused && !backgroundAudio.ended;
+    // pause() preserves currentTime. Preserve any pending resume intent if the visitor
+    // moves from the voice-note chapter straight into the playlist chapter.
+    resumeBackgroundAfterPlaylist=resumeBackgroundAfterPlaylist || resumeBackgroundAfterVoice || (!backgroundAudio.paused && !backgroundAudio.ended);
     if(!backgroundAudio.paused)backgroundAudio.pause();
     backgroundButton.disabled=true;
     soundToggle.disabled=true;
@@ -159,6 +169,12 @@
       updateBackgroundAudioUi(false);
       return;
     }
+    if(voice && !voice.paused){
+      resumeBackgroundAfterVoice=true;
+      $("#backgroundAudioStatus").textContent="The background song will resume when your voice note pauses or finishes.";
+      updateBackgroundAudioUi(false);
+      return;
+    }
     // The media element's currentTime is intentionally not reset; play() resumes where pause() left it.
     backgroundAudio.play().then(()=>{
       updateBackgroundAudioUi(true);
@@ -171,6 +187,10 @@
   function toggleBackgroundSong(){
     if(current===3){
       toast("The shared playlist has the music here. The background song resumes when you leave this chapter.");
+      return;
+    }
+    if(voice && !voice.paused){
+      toast("The background song will resume when your voice note pauses or finishes.");
       return;
     }
     if(backgroundAudio.paused)startBackgroundSong();
@@ -190,9 +210,35 @@
     $("#backgroundAudioStatus").textContent="The background song could not be loaded. Check assets/music/background-song.mp3.";
     updateBackgroundAudioUi(false);
   });
-  // YouTube runs in a cross-origin iframe; the local track is paused on entry and resumes on exit.
-  // Voice-note placeholder stays visible until the real file loads.
-  const voice=$("#voiceAudio");
+  // The voice note temporarily takes priority over the background soundtrack.
+  // pause() does not reset currentTime, so the song resumes from its exact saved position.
+  voice.addEventListener("play",()=>{
+    if(current===3)return;
+    resumeBackgroundAfterVoice=!backgroundAudio.paused && !backgroundAudio.ended;
+    if(resumeBackgroundAfterVoice){
+      backgroundAudio.pause();
+      updateBackgroundAudioUi(false);
+      $("#backgroundAudioStatus").textContent="Paused while your voice note plays. Your background song will resume when the voice note pauses or finishes.";
+    }
+  });
+  function resumeBackgroundAfterVoiceNote(){
+    if(!resumeBackgroundAfterVoice)return;
+    resumeBackgroundAfterVoice=false;
+    // The playlist chapter has priority over both the voice note and the local track.
+    if(current===3){
+      resumeBackgroundAfterPlaylist=true;
+      return;
+    }
+    backgroundAudio.play().then(()=>{
+      updateBackgroundAudioUi(true);
+      $("#backgroundAudioStatus").textContent="Your background song has resumed from the same point. ♡";
+    }).catch(()=>{
+      updateBackgroundAudioUi(false);
+      $("#backgroundAudioStatus").textContent="Your browser did not resume the background song automatically. Tap Sound to continue from where it stopped.";
+    });
+  }
+  voice.addEventListener("pause",resumeBackgroundAfterVoiceNote);
+  voice.addEventListener("ended",resumeBackgroundAfterVoiceNote);
   voice.addEventListener("loadedmetadata",()=>$("#voiceMissing").hidden=true);
   voice.addEventListener("error",()=>{$("#voiceMissing").hidden=false});
   // Load the user's original photos eagerly when their visible frame is activated.
