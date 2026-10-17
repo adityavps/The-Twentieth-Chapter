@@ -147,3 +147,66 @@
 }
 
 .photo-error-hint{display:block;max-width:100%;margin-top:8px;font:10px/1.4 var(--sans);color:#8b3f45;overflow-wrap:anywhere;}
+
+
+/* v9: keep Spotify's playlist embed contained and easy to use on phones. */
+.playlist-embed{
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  height:352px;
+  min-height:0;
+  aspect-ratio:auto;
+  position:relative;
+  overflow:hidden;
+  border-radius:12px;
+  contain:layout paint;
+}
+.playlist-embed iframe{
+  display:block;
+  box-sizing:border-box;
+  width:100% !important;
+  max-width:100% !important;
+  min-width:0 !important;
+  height:352px !important;
+  min-height:0 !important;
+  border:0;
+  border-radius:12px;
+}
+.spotify-open-button{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:9px;
+  width:fit-content;
+  max-width:100%;
+  min-height:46px;
+  margin:14px auto 0;
+  padding:12px 17px;
+  border:1px solid #cda96e;
+  border-radius:4px;
+  background:#e6cd9d;
+  color:#30222a;
+  font:600 12px/1.35 var(--sans);
+  text-align:center;
+  text-decoration:none;
+  box-shadow:0 4px 12px #0002;
+  transition:background .2s ease,transform .2s ease;
+}
+.spotify-open-button span{font-size:15px;line-height:1}
+.spotify-open-button:hover{background:#f0ddb8;transform:translateY(-1px)}
+.spotify-open-button:focus-visible{outline:2px solid #f0d6a1;outline-offset:3px}
+.spotify-help-note{max-width:34em}
+@media(max-width:520px){
+  .playlist-card{min-width:0;overflow:hidden;padding:14px 12px}
+  .playlist-heading{min-width:0;gap:10px}
+  .playlist-heading>div{min-width:0;flex:1}
+  .playlist-heading .eyebrow{line-height:1.55;letter-spacing:.16em}
+  .playlist-heading h3{font-size:clamp(17px,4.8vw,20px);line-height:1.15}
+  .playlist-embed{height:152px;min-height:0;aspect-ratio:auto;border-radius:12px}
+  .playlist-embed iframe{height:152px !important;min-height:0 !important}
+  .spotify-open-button{width:100%;min-height:48px;margin-top:12px;padding:13px 12px}
+  .spotify-help-note{margin:10px auto 0;font-size:10px;line-height:1.55}
+  /* The bottom page-turn bar is fixed, so leave scrollable space after this chapter's note. */
+  .music-page{padding-bottom:112px}
+}
