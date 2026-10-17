@@ -69,8 +69,8 @@
       setTimeout(()=>{if(isTurning)finish()},850);
     }
     navigationReady=true;
-    if(index===3) stopBackgroundSongForPlaylist();
-    else if(oldIndex===3) resumeBackgroundSongAfterPlaylist();
+    if(index===3 && oldIndex!==3) onPlaylistPageEntered();
+    else if(oldIndex===3 && index!==3) onPlaylistPageLeft();
   }
   $("#prevPage").addEventListener("click",()=>showPage(current-1,"prev"));
   $("#nextPage").addEventListener("click",()=>showPage(current+1,"next"));
@@ -121,85 +121,259 @@
     if(e.key==="ArrowLeft"&&!e.target.matches("input,textarea,button,a,iframe,audio,video"))showPage(current-1,"prev");
   });
   const backgroundAudio=$("#violinAudio"), backgroundButton=$("#violinButton"), soundToggle=$("#soundToggle"), wave=$(".sound-wave");
-  let resumeBackgroundAfterPlaylist=false;
-  let resumeBackgroundAfterVoice=false;
+  const playlistFrame=$("#playlistEmbed"), spotifyHost=$("#spotifyEmbedHost"), spotifyStatus=$("#spotifyEmbedStatus");
+  const spotifyHelpNote=$("#spotifyHelpNote");
+  const SPOTIFY_PLAYLIST_URI="spotify:playlist:6hsGNTF4cAAcn42sR1ZiTK";
+  const SPOTIFY_EMBED_URL="https://open.spotify.com/embed/playlist/6hsGNTF4cAAcn42sR1ZiTK?utm_source=generator&si=00f070f46b4c4e4b";
+  let backgroundWanted=false;
+  let spotifyController=null;
+  let spotifyPlaybackIsPlaying=false;
+  let playlistPageActive=false;
+  let spotifyFallbackActive=false;
+  let spotifyEmbedReady=false;
+  let ambientResumeTimer=null;
+  let spotifyReadyTimer=null;
   backgroundAudio.volume=0.42;
+
   function updateBackgroundAudioUi(isPlaying){
     backgroundButton.textContent=isPlaying?"Ⅱ":"▶";
     backgroundButton.setAttribute("aria-label",isPlaying?"Pause background song":"Play background song");
     soundToggle.setAttribute("aria-pressed",String(isPlaying));
     wave.classList.toggle("playing",isPlaying);
   }
-  function startBackgroundSong(){
-    if(current===3)return;
-    if(voice && !voice.paused){
-      toast("The background song will resume when your voice note pauses or finishes.");
-      return;
+  function setBackgroundStatus(message){$("#backgroundAudioStatus").textContent=message;}
+  function voiceIsPlaying(){return Boolean(voice && !voice.paused && !voice.ended);}
+  function spotifyIsForeground(){return spotifyPlaybackIsPlaying || (spotifyFallbackActive && playlistPageActive);}
+  function foregroundAudioIsPlaying(){return spotifyIsForeground() || voiceIsPlaying();}
+
+  function refreshBackgroundStatus(){
+    if(spotifyPlaybackIsPlaying){
+      setBackgroundStatus("Paused while Spotify plays. Your background song will return from this exact point when you pause Spotify or turn the page.");
+    }else if(spotifyFallbackActive && playlistPageActive){
+      setBackgroundStatus("Spotify is using compatibility mode, so the background song stays paused on this chapter to prevent overlapping audio. It will resume when you turn the page.");
+    }else if(voiceIsPlaying()){
+      setBackgroundStatus("Paused while your voice note plays. Your background song will return from the same point when the note pauses or finishes.");
+    }else if(backgroundWanted && !backgroundAudio.paused){
+      setBackgroundStatus("Your background song is playing softly behind the book. ♡");
+    }else if(backgroundWanted){
+      setBackgroundStatus("Your background song is ready to resume. If your browser blocks automatic audio, tap the sound control once.");
+    }else{
+      setBackgroundStatus("The background song is turned off. Use the sound control whenever you want to bring it back.");
     }
-    if(!backgroundAudio.getAttribute("src")){
-      $("#backgroundAudioStatus").textContent="The background song file could not be found.";
-      return;
-    }
-    if(!backgroundAudio.paused)return;
-    backgroundAudio.play().then(()=>{
-      updateBackgroundAudioUi(true);
-      $("#backgroundAudioStatus").textContent="Your background song is playing softly. It will pause for the shared playlist and resume when you leave this chapter.";
-    }).catch(()=>{
-      $("#backgroundAudioStatus").textContent="The browser did not start audio. Tap the sound control to try again.";
-      updateBackgroundAudioUi(false);
-    });
   }
-  function stopBackgroundSongForPlaylist(){
-    // pause() preserves currentTime. Preserve any pending resume intent if the visitor
-    // moves from the voice-note chapter straight into the playlist chapter.
-    resumeBackgroundAfterPlaylist=resumeBackgroundAfterPlaylist || resumeBackgroundAfterVoice || (!backgroundAudio.paused && !backgroundAudio.ended);
+
+  function pauseAmbientForForeground(){
+    if(ambientResumeTimer){clearTimeout(ambientResumeTimer);ambientResumeTimer=null;}
     if(!backgroundAudio.paused)backgroundAudio.pause();
-    backgroundButton.disabled=true;
-    soundToggle.disabled=true;
     updateBackgroundAudioUi(false);
-    $("#backgroundAudioStatus").textContent="Paused for the shared playlist. The background song will resume from this point when you leave this chapter.";
+    refreshBackgroundStatus();
   }
-  function resumeBackgroundSongAfterPlaylist(){
-    const shouldResume=resumeBackgroundAfterPlaylist;
-    resumeBackgroundAfterPlaylist=false;
-    backgroundButton.disabled=false;
-    soundToggle.disabled=false;
-    if(!shouldResume){
-      $("#backgroundAudioStatus").textContent="The background song is paused. Use Sound to start it whenever you like.";
-      updateBackgroundAudioUi(false);
+
+  function playAmbientIfAllowed(){
+    if(!backgroundWanted){updateBackgroundAudioUi(false);refreshBackgroundStatus();return;}
+    if(foregroundAudioIsPlaying()){
+      pauseAmbientForForeground();
       return;
     }
-    if(voice && !voice.paused){
-      resumeBackgroundAfterVoice=true;
-      $("#backgroundAudioStatus").textContent="The background song will resume when your voice note pauses or finishes.";
-      updateBackgroundAudioUi(false);
-      return;
-    }
-    // The media element's currentTime is intentionally not reset; play() resumes where pause() left it.
+    if(!backgroundAudio.paused){updateBackgroundAudioUi(true);refreshBackgroundStatus();return;}
     backgroundAudio.play().then(()=>{
+      // A foreground source may have started while the browser was resolving play().
+      if(!backgroundWanted || foregroundAudioIsPlaying()){
+        backgroundAudio.pause();
+        updateBackgroundAudioUi(false);
+        refreshBackgroundStatus();
+        return;
+      }
       updateBackgroundAudioUi(true);
-      $("#backgroundAudioStatus").textContent="Your background song has resumed from the same point. ♡";
+      refreshBackgroundStatus();
     }).catch(()=>{
       updateBackgroundAudioUi(false);
-      $("#backgroundAudioStatus").textContent="Your browser paused the song during the chapter change. Tap Sound to resume it from where it stopped.";
+      setBackgroundStatus("Your browser blocked automatic audio resumption. Tap the sound control to continue from where the song stopped.");
     });
   }
+
+  function maybeResumeAmbient(delay=160){
+    if(ambientResumeTimer){clearTimeout(ambientResumeTimer);ambientResumeTimer=null;}
+    if(foregroundAudioIsPlaying()){
+      pauseAmbientForForeground();
+      return;
+    }
+    if(!backgroundWanted){updateBackgroundAudioUi(false);refreshBackgroundStatus();return;}
+    ambientResumeTimer=setTimeout(()=>{
+      ambientResumeTimer=null;
+      playAmbientIfAllowed();
+    },delay);
+  }
+
+  function startBackgroundSong(){
+    backgroundWanted=true;
+    if(foregroundAudioIsPlaying()){
+      pauseAmbientForForeground();
+      toast("The background song will return when Spotify or your voice note pauses.");
+      return;
+    }
+    playAmbientIfAllowed();
+  }
+
   function toggleBackgroundSong(){
-    if(current===3){
-      toast("The shared playlist has the music here. The background song resumes when you leave this chapter.");
-      return;
-    }
-    if(voice && !voice.paused){
-      toast("The background song will resume when your voice note pauses or finishes.");
-      return;
-    }
-    if(backgroundAudio.paused)startBackgroundSong();
-    else {
-      backgroundAudio.pause();
+    if(backgroundWanted){
+      backgroundWanted=false;
+      if(!backgroundAudio.paused)backgroundAudio.pause();
       updateBackgroundAudioUi(false);
-      $("#backgroundAudioStatus").textContent="The background song is paused.";
+      setBackgroundStatus(foregroundAudioIsPlaying()?"The background song is set to stay off when Spotify or your voice note pauses.":"The background song is turned off.");
+    }else{
+      backgroundWanted=true;
+      if(foregroundAudioIsPlaying()){
+        updateBackgroundAudioUi(false);
+        refreshBackgroundStatus();
+        toast("The background song will return when the foreground audio pauses.");
+      }else playAmbientIfAllowed();
     }
   }
+
+  function handleSpotifyPlaying(){
+    spotifyPlaybackIsPlaying=true;
+    pauseAmbientForForeground();
+    if(voiceIsPlaying())voice.pause();
+    refreshBackgroundStatus();
+    // The player should never keep playing audio after its page has been turned away.
+    if(!playlistPageActive && spotifyController){
+      try{spotifyController.pause();}catch(_error){}
+    }
+  }
+
+  function handleSpotifyPaused(){
+    spotifyPlaybackIsPlaying=false;
+    maybeResumeAmbient(180);
+  }
+
+  function onPlaylistPageEntered(){
+    playlistPageActive=true;
+    if(spotifyFallbackActive){
+      // The basic iframe does not expose playback-state events, so compatibility mode
+      // pauses ambient music for this chapter rather than risking two tracks together.
+      if(!playlistFrame.querySelector(".spotify-fallback-player"))installSpotifyFallbackFrame();
+      if(!backgroundAudio.paused)backgroundAudio.pause();
+      updateBackgroundAudioUi(false);
+      refreshBackgroundStatus();
+      return;
+    }
+    if(spotifyPlaybackIsPlaying)pauseAmbientForForeground();
+    else maybeResumeAmbient(80);
+  }
+
+  function onPlaylistPageLeft(){
+    playlistPageActive=false;
+    if(spotifyController){
+      if(spotifyPlaybackIsPlaying){
+        try{spotifyController.pause();}catch(_error){}
+        // Recovery path in case an embedded player does not send its pause event.
+        if(ambientResumeTimer)clearTimeout(ambientResumeTimer);
+        ambientResumeTimer=setTimeout(()=>{
+          ambientResumeTimer=null;
+          if(!playlistPageActive && spotifyPlaybackIsPlaying){
+            spotifyPlaybackIsPlaying=false;
+            maybeResumeAmbient(0);
+          }
+        },1100);
+      }else{
+        try{spotifyController.pause();}catch(_error){}
+        maybeResumeAmbient(80);
+      }
+    }else if(spotifyFallbackActive){
+      // Unloading the fallback iframe stops playback on page-turn in compatibility mode.
+      const fallbackFrame=playlistFrame.querySelector(".spotify-fallback-player");
+      if(fallbackFrame)fallbackFrame.remove();
+      playlistFrame.classList.remove("is-ready","uses-fallback");
+      spotifyStatus.hidden=false;
+      spotifyStatus.innerHTML="Your playlist is ready when you return.<br><span>Turn back to this chapter to open Spotify again.</span>";
+      maybeResumeAmbient(80);
+    }else{
+      maybeResumeAmbient(80);
+    }
+  }
+
+  function installSpotifyFallbackFrame(){
+    if(playlistFrame.querySelector(".spotify-fallback-player"))return;
+    // Spotify's API replaces its mount node with an iframe. Always anchor fallback
+    // markup to the stable playlist card, not to that replaceable mount node.
+    playlistFrame.querySelectorAll("iframe").forEach(frame=>frame.remove());
+    if(spotifyHost && spotifyHost.isConnected)spotifyHost.remove();
+    const frame=document.createElement("iframe");
+    frame.className="spotify-fallback-player";
+    frame.title="Our shared Spotify playlist";
+    frame.src=SPOTIFY_EMBED_URL;
+    frame.width="100%";
+    frame.height=window.matchMedia("(max-width: 520px)").matches?"352":"420";
+    frame.setAttribute("referrerpolicy","strict-origin-when-cross-origin");
+    frame.setAttribute("allow","autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture");
+    frame.setAttribute("loading","eager");
+    frame.setAttribute("allowfullscreen","");
+    frame.style.border="0";
+    playlistFrame.insertBefore(frame,spotifyStatus);
+    playlistFrame.classList.add("is-ready","uses-fallback");
+    spotifyStatus.hidden=true;
+  }
+
+  function activateSpotifyFallback(){
+    if(spotifyEmbedReady || spotifyFallbackActive)return;
+    spotifyFallbackActive=true;
+    if(spotifyReadyTimer){clearTimeout(spotifyReadyTimer);spotifyReadyTimer=null;}
+    installSpotifyFallbackFrame();
+    spotifyHelpNote.textContent="Spotify's full playlist player is available. In this browser, playback-state syncing is limited, so the background song stays paused while this chapter is open to avoid overlapping tracks.";
+    if(playlistPageActive){
+      if(!backgroundAudio.paused)backgroundAudio.pause();
+      updateBackgroundAudioUi(false);
+      refreshBackgroundStatus();
+    }
+  }
+
+  function initializeSpotifyEmbed(IFrameAPI){
+    if(spotifyFallbackActive || spotifyController || !IFrameAPI || !spotifyHost)return;
+    try{
+      const height=window.matchMedia("(max-width: 520px)").matches?"352":"420";
+      IFrameAPI.createController(spotifyHost,{uri:SPOTIFY_PLAYLIST_URI,width:"100%",height},controller=>{
+        spotifyController=controller;
+        controller.addListener("ready",()=>{
+          spotifyEmbedReady=true;
+          if(spotifyReadyTimer){clearTimeout(spotifyReadyTimer);spotifyReadyTimer=null;}
+          playlistFrame.classList.add("is-ready");
+          spotifyStatus.hidden=true;
+        });
+        controller.addListener("playback_started",()=>handleSpotifyPlaying());
+        controller.addListener("playback_update",event=>{
+          if(!event || !event.data || typeof event.data.isPaused!=="boolean")return;
+          if(event.data.isPaused)handleSpotifyPaused();
+          else handleSpotifyPlaying();
+        });
+        // If Spotify's controller initializes but the actual player never becomes ready,
+        // restore the plain embed as a compatibility fallback.
+        spotifyReadyTimer=setTimeout(()=>{
+          if(!spotifyEmbedReady && spotifyController===controller){
+            try{controller.destroy();}catch(_error){}
+            spotifyController=null;
+            activateSpotifyFallback();
+          }
+        },12000);
+      });
+    }catch(_error){activateSpotifyFallback();}
+  }
+
+  function loadSpotifyIframeAPI(){
+    if(!spotifyHost)return;
+    // Spotify calls this global when its documented iFrame API is ready. Define it
+    // before inserting the asynchronous script to avoid a load-order race.
+    window.onSpotifyIframeApiReady=initializeSpotifyEmbed;
+    const apiScript=document.createElement("script");
+    apiScript.src="https://open.spotify.com/embed/iframe-api/v1";
+    apiScript.async=true;
+    apiScript.onerror=activateSpotifyFallback;
+    document.head.appendChild(apiScript);
+    setTimeout(()=>{
+      if(!spotifyController && !spotifyEmbedReady && !spotifyFallbackActive)activateSpotifyFallback();
+    },10000);
+  }
+
   // Any first tap on the cover counts as the visitor gesture required to start audio.
   $("#cover").addEventListener("click",startBackgroundSong,{once:true});
   backgroundButton.addEventListener("click",toggleBackgroundSong);
@@ -207,40 +381,24 @@
   backgroundAudio.addEventListener("play",()=>updateBackgroundAudioUi(true));
   backgroundAudio.addEventListener("pause",()=>updateBackgroundAudioUi(false));
   backgroundAudio.addEventListener("error",()=>{
-    $("#backgroundAudioStatus").textContent="The background song could not be loaded. Check assets/music/background-song.mp3.";
+    setBackgroundStatus("The background song could not be loaded. Check assets/music/background-song.mp3.");
     updateBackgroundAudioUi(false);
   });
-  // The voice note temporarily takes priority over the background soundtrack.
-  // pause() does not reset currentTime, so the song resumes from its exact saved position.
+
+  // Voice note is foreground audio. The native pause keeps the exact background playhead.
   voice.addEventListener("play",()=>{
-    if(current===3)return;
-    resumeBackgroundAfterVoice=!backgroundAudio.paused && !backgroundAudio.ended;
-    if(resumeBackgroundAfterVoice){
-      backgroundAudio.pause();
-      updateBackgroundAudioUi(false);
-      $("#backgroundAudioStatus").textContent="Paused while your voice note plays. Your background song will resume when the voice note pauses or finishes.";
-    }
+    if(current!==6){voice.pause();return;}
+    if(spotifyPlaybackIsPlaying && spotifyController){try{spotifyController.pause();}catch(_error){}}
+    pauseAmbientForForeground();
+    refreshBackgroundStatus();
   });
-  function resumeBackgroundAfterVoiceNote(){
-    if(!resumeBackgroundAfterVoice)return;
-    resumeBackgroundAfterVoice=false;
-    // The playlist chapter has priority over both the voice note and the local track.
-    if(current===3){
-      resumeBackgroundAfterPlaylist=true;
-      return;
-    }
-    backgroundAudio.play().then(()=>{
-      updateBackgroundAudioUi(true);
-      $("#backgroundAudioStatus").textContent="Your background song has resumed from the same point. ♡";
-    }).catch(()=>{
-      updateBackgroundAudioUi(false);
-      $("#backgroundAudioStatus").textContent="Your browser did not resume the background song automatically. Tap Sound to continue from where it stopped.";
-    });
-  }
-  voice.addEventListener("pause",resumeBackgroundAfterVoiceNote);
-  voice.addEventListener("ended",resumeBackgroundAfterVoiceNote);
+  voice.addEventListener("pause",()=>maybeResumeAmbient(140));
+  voice.addEventListener("ended",()=>maybeResumeAmbient(140));
   voice.addEventListener("loadedmetadata",()=>$("#voiceMissing").hidden=true);
   voice.addEventListener("error",()=>{$("#voiceMissing").hidden=false});
+
+  loadSpotifyIframeAPI();
+
   // Load the user's original photos eagerly when their visible frame is activated.
   // CSS keeps each image in the layout while it loads (opacity 0); display:none would
   // prevent some mobile browsers from requesting lazy images inside hidden cards.

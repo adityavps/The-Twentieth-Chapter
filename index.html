@@ -82,20 +82,20 @@
     </div>
     <div class="playlist-card">
       <div class="playlist-heading"><span class="tiny-seal">♫</span><div><p class="eyebrow">A PLAYLIST WE MADE TOGETHER</p><h3>For the moments between words</h3></div></div>
-      <div class="playlist-embed" id="playlistEmbed">
-        <!-- Compact on phones, full playlist view on larger screens. -->
-        <iframe title="Our shared Spotify playlist" src="https://open.spotify.com/embed/playlist/6hsGNTF4cAAcn42sR1ZiTK?utm_source=generator&amp;si=00f070f46b4c4e4b" width="100%" height="352" style="border:0;border-radius:12px" referrerpolicy="strict-origin-when-cross-origin" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" allowfullscreen></iframe>
+      <div class="playlist-embed" id="playlistEmbed" aria-label="Embedded Spotify playlist player">
+        <div class="spotify-embed-host" id="spotifyEmbedHost"></div>
+        <div class="spotify-embed-status" id="spotifyEmbedStatus" role="status" aria-live="polite">Opening your playlist…<br><span>Just a moment while Spotify gets ready.</span></div>
       </div>
-      <a class="spotify-open-button" href="https://open.spotify.com/playlist/6hsGNTF4cAAcn42sR1ZiTK" target="_blank" rel="noopener noreferrer" aria-label="Open the full playlist in Spotify in a new tab">Open the full playlist in Spotify <span aria-hidden="true">↗</span></a>
-      <p class="tiny-note spotify-help-note">Tap play above, or open the full playlist in Spotify. If Spotify asks you to open the app or sign in, follow its prompt.</p>
+      <a class="spotify-open-button" id="spotifyOpenLink" href="https://open.spotify.com/playlist/6hsGNTF4cAAcn42sR1ZiTK" target="_blank" rel="noopener noreferrer" aria-label="Open the full playlist in Spotify in a new tab">Open the full playlist in Spotify <span aria-hidden="true">↗</span></a>
+      <p class="tiny-note spotify-help-note" id="spotifyHelpNote">Press play inside the player. The background song will pause while Spotify plays, then return from the same point when you pause Spotify or turn the page.</p>
     </div>
-    <div class="background-music-card">
+    <div class="background-music-card" id="backgroundMusicCard">
       <div class="sound-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-      <div><strong>The background song</strong><p id="backgroundAudioStatus">Your song begins with the book. If it was playing, it pauses on the playlist chapter and resumes from the same point when you leave.</p></div>
+      <div><strong>The background song</strong><p id="backgroundAudioStatus">Your song begins with the book. It softly pauses whenever Spotify or your voice note plays, then resumes from the same point.</p></div>
       <button class="round-play" id="violinButton" type="button" aria-label="Play or pause background song">▶</button>
     </div>
     <audio id="violinAudio" preload="auto" loop src="assets/music/background-song.mp3"></audio>
-    <p class="tiny-note">The background song pauses while this playlist chapter is open, then resumes from where it paused when you turn away. Browsers require a first tap before audio can start.</p>
+    <p class="tiny-note">Your background song is the quiet constant. Spotify and your voice note take the foreground; when either pauses or you turn the page, the background song returns where it left off. Browsers may require the first tap before audio can start.</p>
   </section>
 
   <section class="page memories-page" id="memories" data-page="memories">

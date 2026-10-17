@@ -149,64 +149,55 @@
 .photo-error-hint{display:block;max-width:100%;margin-top:8px;font:10px/1.4 var(--sans);color:#8b3f45;overflow-wrap:anywhere;}
 
 
-/* v9: keep Spotify's playlist embed contained and easy to use on phones. */
+/* v10: generous playlist space + Spotify's official iFrame API host. */
 .playlist-embed{
-  width:100%;
-  max-width:100%;
-  min-width:0;
-  height:352px;
-  min-height:0;
-  aspect-ratio:auto;
-  position:relative;
-  overflow:hidden;
-  border-radius:12px;
-  contain:layout paint;
+  width:100%;max-width:100%;min-width:0;height:420px;min-height:0;aspect-ratio:auto;
+  position:relative;overflow:hidden;border:1px solid #b58e5a70;border-radius:15px;
+  background:radial-gradient(ellipse at 50% 0%,#392d3a,#17131d 85%);
+  box-shadow:0 10px 24px #0003;isolation:isolate;
 }
-.playlist-embed iframe{
-  display:block;
-  box-sizing:border-box;
-  width:100% !important;
-  max-width:100% !important;
-  min-width:0 !important;
-  height:352px !important;
-  min-height:0 !important;
-  border:0;
-  border-radius:12px;
+.spotify-embed-host{position:relative;width:100%;height:100%;min-width:0;min-height:0;z-index:1;}
+.spotify-embed-host iframe,.playlist-embed>iframe{
+  display:block;box-sizing:border-box;position:absolute;inset:0;width:100% !important;max-width:100% !important;min-width:0 !important;
+  height:100% !important;min-height:0 !important;border:0;border-radius:13px;
 }
+.playlist-embed>iframe.spotify-fallback-player{z-index:1}
+.spotify-embed-status{
+  position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+  margin:0;padding:20px;text-align:center;color:#e8d4ad;background:linear-gradient(145deg,#302431,#17131c);
+  font:600 13px/1.5 var(--sans);letter-spacing:.03em;pointer-events:none;
+}
+.spotify-embed-status span{font:11px/1.6 var(--sans);color:#ad9a91;font-weight:400;letter-spacing:0}
+.playlist-embed.is-ready .spotify-embed-status{display:none}
+.playlist-embed.uses-fallback .spotify-embed-status{display:none}
 .spotify-open-button{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:9px;
-  width:fit-content;
-  max-width:100%;
-  min-height:46px;
-  margin:14px auto 0;
-  padding:12px 17px;
-  border:1px solid #cda96e;
-  border-radius:4px;
-  background:#e6cd9d;
-  color:#30222a;
-  font:600 12px/1.35 var(--sans);
-  text-align:center;
-  text-decoration:none;
-  box-shadow:0 4px 12px #0002;
+  display:flex;align-items:center;justify-content:center;gap:10px;width:100%;max-width:100%;min-height:52px;
+  margin:14px auto 0;padding:14px 17px;border:1px solid #cda96e;border-radius:6px;background:#e6cd9d;
+  color:#30222a;font:650 13px/1.35 var(--sans);text-align:center;text-decoration:none;box-shadow:0 5px 14px #0002;
   transition:background .2s ease,transform .2s ease;
 }
-.spotify-open-button span{font-size:15px;line-height:1}
+.spotify-open-button span{font-size:17px;line-height:1}
 .spotify-open-button:hover{background:#f0ddb8;transform:translateY(-1px)}
 .spotify-open-button:focus-visible{outline:2px solid #f0d6a1;outline-offset:3px}
-.spotify-help-note{max-width:34em}
+.spotify-help-note{max-width:36em;margin-top:12px;font-size:11px;line-height:1.65}
+.background-music-card{align-items:center}
+.background-music-card>div:nth-child(2){min-width:0;flex:1}
+.background-music-card p{line-height:1.55}
+.background-music-card .round-play{flex:0 0 54px}
 @media(max-width:520px){
-  .playlist-card{min-width:0;overflow:hidden;padding:14px 12px}
-  .playlist-heading{min-width:0;gap:10px}
+  .playlist-card{min-width:0;overflow:hidden;padding:15px 12px}
+  .playlist-heading{min-width:0;gap:10px;margin-bottom:15px}
   .playlist-heading>div{min-width:0;flex:1}
-  .playlist-heading .eyebrow{line-height:1.55;letter-spacing:.16em}
-  .playlist-heading h3{font-size:clamp(17px,4.8vw,20px);line-height:1.15}
-  .playlist-embed{height:152px;min-height:0;aspect-ratio:auto;border-radius:12px}
-  .playlist-embed iframe{height:152px !important;min-height:0 !important}
-  .spotify-open-button{width:100%;min-height:48px;margin-top:12px;padding:13px 12px}
-  .spotify-help-note{margin:10px auto 0;font-size:10px;line-height:1.55}
+  .playlist-heading .eyebrow{line-height:1.55;letter-spacing:.14em;font-size:9px}
+  .playlist-heading h3{font-size:clamp(18px,5vw,21px);line-height:1.18}
+  .playlist-embed{height:352px;min-height:0;border-radius:13px}
+  .spotify-embed-status{font-size:12px;padding:14px}
+  .spotify-open-button{width:100%;min-height:52px;margin-top:12px;padding:13px 12px;font-size:12px}
+  .spotify-help-note{margin:10px auto 0;font-size:10px;line-height:1.65}
+  .background-music-card{gap:10px;padding:12px 10px}
+  .background-music-card strong{font-size:15px}
+  .background-music-card p{font-size:12px;line-height:1.5}
+  .background-music-card .round-play{flex-basis:46px;width:46px;height:46px}
   /* The bottom page-turn bar is fixed, so leave scrollable space after this chapter's note. */
   .music-page{padding-bottom:112px}
 }
