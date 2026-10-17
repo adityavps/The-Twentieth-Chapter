@@ -319,8 +319,15 @@
     if(spotifyEmbedReady || spotifyFallbackActive)return;
     spotifyFallbackActive=true;
     if(spotifyReadyTimer){clearTimeout(spotifyReadyTimer);spotifyReadyTimer=null;}
+
+    // A controller may exist without ever completing initialization on some mobile
+    // browsers. Tear it down before installing the standard Spotify iframe.
+    if(spotifyController){
+      try{spotifyController.destroy();}catch(_error){}
+      spotifyController=null;
+    }
     installSpotifyFallbackFrame();
-    spotifyHelpNote.textContent="Spotify's full playlist player is available. In this browser, playback-state syncing is limited, so the background song stays paused while this chapter is open to avoid overlapping tracks.";
+    spotifyHelpNote.textContent="Spotify's standard playlist player is ready. This browser did not provide reliable playback-state events, so the background song stays paused while this chapter is open to prevent overlapping audio.";
     if(playlistPageActive){
       if(!backgroundAudio.paused)backgroundAudio.pause();
       updateBackgroundAudioUi(false);
@@ -329,49 +336,60 @@
   }
 
   function initializeSpotifyEmbed(IFrameAPI){
-    if(spotifyFallbackActive || spotifyController || !IFrameAPI || !spotifyHost)return;
+    if(spotifyFallbackActive || spotifyController || !spotifyHost)return;
+    if(!IFrameAPI || typeof IFrameAPI.createController!=="function"){
+      activateSpotifyFallback();
+      return;
+    }
     try{
       const height=window.matchMedia("(max-width: 520px)").matches?"352":"420";
       IFrameAPI.createController(spotifyHost,{uri:SPOTIFY_PLAYLIST_URI,width:"100%",height},controller=>{
+        // The timeout may already have installed the fallback while Spotify was
+        // still creating its controller. Never let a late callback replace it.
+        if(spotifyFallbackActive){try{controller.destroy();}catch(_error){}return;}
         spotifyController=controller;
-        controller.addListener("ready",()=>{
-          spotifyEmbedReady=true;
-          if(spotifyReadyTimer){clearTimeout(spotifyReadyTimer);spotifyReadyTimer=null;}
-          playlistFrame.classList.add("is-ready");
-          spotifyStatus.hidden=true;
-        });
-        controller.addListener("playback_started",()=>handleSpotifyPlaying());
-        controller.addListener("playback_update",event=>{
-          if(!event || !event.data || typeof event.data.isPaused!=="boolean")return;
-          if(event.data.isPaused)handleSpotifyPaused();
-          else handleSpotifyPlaying();
-        });
-        // If Spotify's controller initializes but the actual player never becomes ready,
-        // restore the plain embed as a compatibility fallback.
-        spotifyReadyTimer=setTimeout(()=>{
-          if(!spotifyEmbedReady && spotifyController===controller){
-            try{controller.destroy();}catch(_error){}
-            spotifyController=null;
-            activateSpotifyFallback();
-          }
-        },12000);
+        try{
+          // Register playback listeners before the ready listener. If any of them
+          // fails, the watchdog below will choose the safe standard-iframe fallback
+          // instead of marking the player ready without audio coordination.
+          controller.addListener("playback_started",()=>handleSpotifyPlaying());
+          controller.addListener("playback_update",event=>{
+            if(!event || !event.data || typeof event.data.isPaused!=="boolean")return;
+            if(event.data.isPaused)handleSpotifyPaused();
+            else handleSpotifyPlaying();
+          });
+          controller.addListener("ready",()=>{
+            if(spotifyFallbackActive)return;
+            spotifyEmbedReady=true;
+            if(spotifyReadyTimer){clearTimeout(spotifyReadyTimer);spotifyReadyTimer=null;}
+            playlistFrame.classList.add("is-ready");
+            spotifyStatus.hidden=true;
+          });
+        }catch(_listenerError){
+          // Do not leave a stuck loader if a mobile WebView exposes a partial API.
+          // The independent initialization watchdog will replace it with an iframe.
+        }
       });
     }catch(_error){activateSpotifyFallback();}
   }
 
   function loadSpotifyIframeAPI(){
     if(!spotifyHost)return;
-    // Spotify calls this global when its documented iFrame API is ready. Define it
-    // before inserting the asynchronous script to avoid a load-order race.
+    // Arm a watchdog BEFORE loading the third-party script. Unlike the old timer,
+    // this also covers the case where a controller object is returned but one of
+    // its event subscriptions throws (which otherwise leaves the loader forever).
+    // Mobile browsers with tracking protection may never dispatch Spotify's API
+    // callback at all, so this timer must not depend on that callback existing.
+    spotifyReadyTimer=setTimeout(()=>{
+      if(!spotifyEmbedReady && !spotifyFallbackActive)activateSpotifyFallback();
+    },7500);
+
     window.onSpotifyIframeApiReady=initializeSpotifyEmbed;
     const apiScript=document.createElement("script");
     apiScript.src="https://open.spotify.com/embed/iframe-api/v1";
     apiScript.async=true;
     apiScript.onerror=activateSpotifyFallback;
     document.head.appendChild(apiScript);
-    setTimeout(()=>{
-      if(!spotifyController && !spotifyEmbedReady && !spotifyFallbackActive)activateSpotifyFallback();
-    },10000);
   }
 
   // Any first tap on the cover counts as the visitor gesture required to start audio.
