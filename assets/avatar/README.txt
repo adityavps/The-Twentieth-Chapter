@@ -1,0 +1,1 @@
+The original avatar supplied with the project is installed as her-avatar.png and is shown on the cover. The image was re-saved only to correct a metadata CRC issue; its appearance was not altered. Do not redraw or replace it.

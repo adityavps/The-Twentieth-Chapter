@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#201522">
+<meta name="description" content="The Twentieth Chapter — a private little edition made of photographs, songs, words, and things worth keeping.">
+<title>The Twentieth Chapter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=DM+Sans:wght@400;500;600&family=Parisienne&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="ambient" aria-hidden="true"><span>✦</span><span>☾</span><span>✧</span><span>✦</span><span>✧</span></div>
+<header class="topbar">
+  <a class="wordmark" href="#cover" aria-label="Return to cover">THE TWENTIETH CHAPTER</a>
+  <button class="sound-toggle" id="soundToggle" type="button" aria-pressed="false" title="Toggle background song">♫ <span>Sound</span></button>
+</header>
+<main id="book">
+  <section class="page cover-page active" id="cover" data-page="cover" aria-label="Book cover">
+    <div class="cover-frame">
+      <div class="cover-topline">A PRIVATE LITTLE EDITION <span>✦</span> 18 OCTOBER 2026</div>
+      <div class="cover-moon">☾</div>
+      <div class="cover-botanical left">❧<br>✿<br>❧</div>
+      <div class="cover-botanical right">✿<br>❧<br>✧</div>
+      <div class="cover-title"><small>THE</small><h1>Twentieth<br>Chapter</h1></div>
+      <button class="avatar-medallion avatar-has-image" id="avatarMedallion" type="button" aria-label="Turn the avatar medallion" aria-expanded="false">
+        <span class="avatar-flip-inner">
+          <span class="avatar-face avatar-front avatar-photo-face">
+            <img class="avatar-image" src="assets/avatar/her-avatar.png" alt="Her original chosen avatar">
+          </span>
+          <span class="avatar-face avatar-back">
+            <span class="avatar-star">✧</span><strong>your<br>little world</strong><small>the reader of this little book</small><span class="avatar-star">✧</span>
+          </span>
+        </span>
+      </button>
+      <p class="cover-subtitle">A small collection of photographs,<br>songs, words, and things worth keeping.</p>
+      <div class="paper-note note-one">same moon<br>different chapters ✶</div>
+      <div class="paper-note note-two">for a reader<br>who collects<br>little worlds</div>
+      <button class="begin-cover" id="beginBook" type="button">TAP THE COVER TO BEGIN <span>↓</span></button>
+      <div class="cover-foot">A BOOK MADE JUST FOR YOU</div>
+    </div>
+  </section>
+
+  <section class="page dedication-page" id="dedication" data-page="dedication">
+    <div class="page-number">I</div><div class="hanging-stars">☾　✧　✦</div>
+    <p class="eyebrow">FOR A READER WHO DESERVES</p>
+    <h2 class="script-heading">a thousand worlds.</h2>
+    <p class="dedication-lede">And a little time<br>to wander through them.</p>
+    <div class="ornament">— ✧ —</div>
+    <div class="dedication-art">
+      <div class="flower-sprig">✿<br>❀<br>✿<br>❧</div>
+      <blockquote>Some people collect things.<br>But you collect feelings, stories,<br>and little pieces of distant worlds.<br><br>This is a small attempt to put<br>some pieces together, for you.</blockquote>
+      <div class="book-stack"><span>✦</span><b>stories</b><b>little worlds</b><b>favourite things</b></div>
+      <div class="butterfly">❧　🦋</div>
+    </div>
+    <p class="page-caption">Turn the page slowly. This little book is in no hurry.</p>
+  </section>
+
+  <section class="page letter-page" id="letter" data-page="letter">
+    <div class="page-number">II</div><p class="eyebrow">A LETTER, IN MY OWN HAND</p>
+    <h2 class="script-heading">A few words for you</h2>
+    <p class="muted center">One photograph. One handwritten page. Nothing more needs to be said here.</p>
+    <div class="letter-mat">
+      <div class="tape tape-a"></div><div class="tape tape-b"></div>
+      <div class="letter-photo" id="letterPhoto"><div class="asset-placeholder"><span>✉</span><strong>Your handwritten letter</strong><small>Add your single photo to<br><code>assets/photos/handwritten-letter.jpg</code></small></div></div>
+      <div class="letter-caption">written slowly, meant sincerely ✦</div>
+    </div>
+    <p class="small-note">The letter photograph will sit inside this frame, like a page tucked into an old scrapbook.</p>
+  </section>
+
+  <section class="page music-page" id="music" data-page="music">
+    <div class="page-number">III</div><p class="eyebrow">CHAPTER III · SONGS IN THE MARGINS</p>
+    <h2 class="script-heading">A little music for your world</h2>
+    <p class="music-intro">Some songs become places. Here is one of ours.</p>
+    <div class="music-scene">
+      <div class="music-orbit orbit-one"></div><div class="music-orbit orbit-two"></div>
+      <div class="music-artwork"><img src="assets/references/music-page-atmosphere.png" alt="Vintage floral and celestial artwork" loading="lazy"><div class="artwork-overlay"></div><div class="music-art-text"><span>OUR LITTLE COLLECTION</span><strong>songs in<br>the margins</strong><small>same moon · different chapters</small></div></div>
+      <div class="music-spark spark-a">✦</div><div class="music-spark spark-b">☾</div><div class="music-spark spark-c">✧</div>
+    </div>
+    <div class="playlist-card">
+      <div class="playlist-heading"><span class="tiny-seal">♫</span><div><p class="eyebrow">A PLAYLIST WE MADE TOGETHER</p><h3>For the moments between words</h3></div></div>
+      <div class="playlist-embed" id="playlistEmbed">
+        <iframe title="Our shared YouTube Music playlist" src="https://www.youtube.com/embed/videoseries?list=PLJmUYonVm99c" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen loading="lazy"></iframe>
+      </div>
+      <a class="text-link" href="https://music.youtube.com/playlist?list=PLJmUYonVm99c&drli=1" target="_blank" rel="noopener noreferrer">Open the playlist in YouTube Music ↗</a>
+      <p class="tiny-note">The playlist is embedded from YouTube. Playback and availability are controlled by YouTube and may require an internet connection.</p>
+    </div>
+    <div class="background-music-card">
+      <div class="sound-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <div><strong>The background song</strong><p id="backgroundAudioStatus">Your song will begin when you first tap the cover and pause when the playlist chapter opens.</p></div>
+      <button class="round-play" id="violinButton" type="button" aria-label="Play or pause background song">▶</button>
+    </div>
+    <audio id="violinAudio" preload="auto" loop src="assets/music/background-song.mp3"></audio>
+    <p class="tiny-note">The background song starts on your first tap of the cover and pauses as soon as this playlist chapter opens, leaving the music to the shared YouTube playlist. Browsers require a tap before audio can start.</p>
+  </section>
+
+  <section class="page memories-page" id="memories" data-page="memories">
+    <div class="page-number">IV</div><p class="eyebrow">CHAPTER IV · THE LITTLE ARCHIVE</p>
+    <h2 class="script-heading">Memories that found their way</h2>
+    <p class="center muted">A knock, a tiny glimpse, and then the years unfolding.</p>
+    <div class="memory-door-stage" id="doorStage">
+      <div class="door" id="memoryDoor">
+        <div class="door-arch"></div><div class="door-moon">☾</div><p class="door-inscription">Some memories<br>don't knock loudly,<br>but they always<br>find their way.</p>
+        <div class="peephole" id="peephole"><span>✦</span></div><div class="door-handle">✧</div>
+        <div class="knock-hand">☝</div>
+      </div>
+      <button class="knock-button" id="knockButton" type="button">Knock gently <span>♡</span></button>
+      <p class="door-hint" id="doorHint">Tap the door and let the first memory find you.</p>
+    </div>
+    <div class="memory-reveal" id="memoryReveal" hidden>
+      <div class="memory-card active" data-memory="0">
+        <div class="photo-frame oval-frame"><img data-src="assets/photos/childhood-one.jpg" alt="Her baby photograph, with a pink head wrap" class="real-photo" loading="lazy"><div class="photo-placeholder"><span>✿</span><strong>First glimpse</strong></div></div>
+        <p class="script-caption">once upon a time…</p><p class="memory-note">A little piece of you, from when the world was still discovering you.</p>
+      </div>
+      <div class="memory-card" data-memory="1">
+        <div class="photo-frame polaroid"><img data-src="assets/photos/childhood-two.jpg" alt="Her childhood school portrait" class="real-photo" loading="lazy"><div class="photo-placeholder"><span>✧</span><strong>Another little chapter</strong></div></div>
+        <p class="script-caption">still you, just a different chapter…</p><p class="memory-note">Some things grow up. The little wonder in them stays.</p>
+      </div>
+      <div class="memory-card recent-collage-card" data-memory="2">
+        <div class="adult-photo-collage" aria-label="Two recent photographs arranged together">
+          <figure class="photo-frame collage-photo-frame"><img data-src="assets/photos/adult-one.jpg" alt="Recent photograph one" class="real-photo" loading="lazy"><div class="photo-placeholder"><span>✦</span><strong>Recent photograph 1</strong></div><figcaption>one little moment</figcaption></figure>
+          <figure class="photo-frame collage-photo-frame"><img data-src="assets/photos/adult-two.jpg" alt="Recent photograph two" class="real-photo" loading="lazy"><div class="photo-placeholder"><span>☾</span><strong>Recent photograph 2</strong></div><figcaption>another little moment</figcaption></figure>
+        </div>
+        <p class="script-caption">same sky, new dreams…</p><p class="memory-note">Two snapshots of the person still becoming, with so many chapters yet to come.</p>
+      </div>
+      <div class="memory-controls"><button id="memoryPrev" type="button" class="outline-button">← Previous</button><span id="memoryCounter">1 / 3</span><button id="memoryNext" type="button" class="outline-button">Next →</button></div>
+    </div>
+  </section>
+
+  <section class="page quiz-page" id="quiz" data-page="quiz">
+    <div class="page-number">V</div><p class="eyebrow">CHAPTER V · A SMALL STUDY OF YOU</p>
+    <h2 class="script-heading">How well do you know yourself?</h2>
+    <p class="quiz-intro">A collection of little questions about the things you love — the things that make you, you.</p>
+    <div class="quiz-shell">
+      <div class="quiz-progress"><span id="quizProgressText">A little collection · 1 of 15</span><div class="progress-track"><span id="quizProgressBar"></span></div></div>
+      <div id="quizContent">
+        <div class="quiz-welcome"><div class="sealed-envelope">✉<span>✦</span></div><h3>For the curious reader</h3><p>Choose the answer that feels most like you. After every answer, a tiny sealed envelope will open with a note. At the end, your choices will become a little collection of favourite things.</p><button class="primary-button" id="startQuiz" type="button">Let's begin ↗</button></div>
+      </div>
+    </div>
+    <div class="quiz-final" id="quizFinal" hidden>
+      <p class="eyebrow">A LITTLE COLLECTION, MADE OF YOU</p><h3 class="script-heading">Your world, gathered here.</h3><p>Every answer is a tiny piece of the world you carry around.</p>
+      <div class="answer-collage" id="answerCollage"></div>
+      <button class="outline-button" id="restartQuiz" type="button">Read the questions again ↻</button>
+    </div>
+    <p class="tiny-note">The questions below use the favourites already established for this project. Edit the question data in <code>script.js</code> to add or replace questions; no personal answers are sent to a server.</p>
+  </section>
+
+  <section class="page voice-page" id="voice" data-page="voice">
+    <div class="page-number">VI</div><p class="eyebrow">CHAPTER VI · A VOICE BETWEEN PAGES</p>
+    <h2 class="script-heading">Because some things are better said aloud</h2>
+    <p class="center muted">A little birthday greeting, in my own voice, for a very special person.</p>
+    <div class="voice-window">
+      <div class="window-sky"><div class="window-moon">☾</div><div class="window-star s1">✦</div><div class="window-star s2">✧</div><div class="window-city">⌂　⌂　♜　⌂　⌂</div></div>
+      <div class="voice-paper">
+        <div class="voice-seal">♫</div><h3>A message just for you</h3>
+        <p>Some words feel softer when spoken, and some feelings are better heard than written.</p>
+        <audio id="voiceAudio" controls preload="metadata">
+          <source src="assets/audio/birthday-voice-note.mp3" type="audio/mpeg">
+          Your browser does not support audio playback.
+        </audio>
+        <div id="voiceMissing" class="asset-hint" hidden>The birthday voice note could not be loaded. Please check the audio file in <code>assets/audio/</code>.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="page gift-page" id="gift" data-page="gift">
+    <div class="page-number">VII</div><p class="eyebrow">THE SURPRISE · A GIFT FOR THE RIGHT MOMENT</p>
+    <h2 class="script-heading">Some things are worth waiting for</h2>
+    <div class="gift-flip-card" id="giftFlipCard" aria-label="Sealed birthday surprise">
+      <div class="gift-flip-inner">
+        <div class="gift-face gift-front">
+          <div class="gift-box-art"><div class="gift-ribbon"></div><div class="gift-bow">∞</div><div class="gift-tag">To be opened<br>at 8:45 p.m.</div><div class="gift-front-caption">A little something is waiting</div></div>
+        </div>
+        <div class="gift-face gift-back" id="giftQrBack" aria-live="polite">
+          <p class="eyebrow">THE WAIT IS OVER</p><h3 class="script-heading">It's time…</h3>
+          <p class="gift-back-note">Your little surprise is ready.</p>
+          <div id="qrArea" class="qr-area"><div class="qr-placeholder">✦<br><span>The final secret will appear here.</span></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="countdown-card">
+      <div class="countdown-moon">☾</div><p class="eyebrow" id="countdownHeading">YOUR SURPRISE WILL BE AVAILABLE IN</p>
+      <div class="countdown" id="countdown" aria-live="polite"><div><strong id="days">00</strong><span>DAYS</span></div><b>:</b><div><strong id="hours">00</strong><span>HOURS</span></div><b>:</b><div><strong id="minutes">00</strong><span>MINUTES</span></div><b>:</b><div><strong id="seconds">00</strong><span>SECONDS</span></div></div>
+      <p class="countdown-caption" id="countdownCaption">Some surprises are timed by the universe. ♡</p>
+      <div class="unlock-status" id="unlockStatus">Scheduled reveal · 18 October 2026 · 8:45 p.m. IST</div>
+    </div>
+    <form class="gift-passcode-form" id="giftUnlockForm" autocomplete="off">
+      <label for="giftPassword">Enter the 15-letter answer key for an early preview</label>
+      <div class="passcode-row">
+        <input id="giftPassword" name="giftPassword" type="password" inputmode="text" autocapitalize="none" spellcheck="false" maxlength="15" placeholder="15 lowercase letters" aria-describedby="giftPasswordFeedback" autocomplete="off">
+        <button class="outline-button" type="submit">Unlock preview</button>
+      </div>
+      <p class="passcode-feedback" id="giftPasswordFeedback" role="status" aria-live="polite"></p>
+    </form>
+    <div class="gift-reveal" id="giftReveal" hidden>
+      <p class="eyebrow">A LITTLE NOTE FOR YOU</p>
+      <p>A little code for a little present. Take your time. ♡</p>
+      <a class="primary-button download-gift" id="giftDownload" href="#" hidden target="_blank" rel="noopener noreferrer">Open your present ↗</a>
+      <p class="tiny-note" id="giftLinkStatus">A little code is waiting here.</p>
+    </div>
+  </section>
+</main>
+<nav class="book-nav" aria-label="Book pages">
+  <button id="prevPage" type="button" disabled aria-label="Previous page">←</button>
+  <div class="nav-center"><span id="navTitle">The cover</span><span id="pageCounter">Cover · 1 / 8</span></div>
+  <button id="nextPage" type="button" aria-label="Next page">→</button>
+</nav>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
+<script src="script.js" defer></script>
+</body>
+</html>

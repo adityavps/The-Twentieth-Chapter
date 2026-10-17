@@ -1,0 +1,1 @@
+Authentic user-provided photos are installed here under the filenames referenced by index.html. Do not replace them with sample or AI-generated portraits. The letter and photos are sized to keep the whole image visible.

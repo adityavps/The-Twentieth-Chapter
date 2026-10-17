@@ -1,0 +1,17 @@
+PERSONAL ASSETS INSTALLED
+[x] Original avatar: assets/avatar/her-avatar.png
+[x] Handwritten letter: assets/photos/handwritten-letter.jpg
+[x] First childhood photo: assets/photos/childhood-one.jpg
+[x] Second childhood photo: assets/photos/childhood-two.jpg
+[x] Recent photo 1: assets/photos/adult-one.jpg
+[x] Recent photo 2: assets/photos/adult-two.jpg
+[x] Voice note: assets/audio/birthday-voice-note.mp3
+[x] Supplied background song, converted to MP3: assets/music/background-song.mp3
+[x] Supplied QR image: assets/gift/gift-qr.png
+
+BEFORE SHARING
+[x] Intended answers for all 15 quiz questions confirmed by the site owner.
+[ ] Test the published site on mobile: QR scanning, photo framing, audio start/stop, voice playback, answer reveals, password preview, page flip and scheduled reveal.
+[ ] Make sure you have permission to use the background song on a public website.
+
+[✓] Quiz answer key confirmed by site owner; reveal, final collage, and passcode use the same 15 answers.

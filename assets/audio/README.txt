@@ -1,0 +1,1 @@
+The supplied voice note is installed as birthday-voice-note.mp3. It was converted from the uploaded M4A to MP3 for broad browser compatibility. Add a separately licensed/redistributable background violin track as assets/music/background-violin.mp3 when available.

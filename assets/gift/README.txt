@@ -1,0 +1,1 @@
+The user-supplied QR image is installed as gift-qr.png and appears on the reverse side of the gift card after the timed or passcode reveal. The static hosting reveal is a presentation effect, not a security barrier.
