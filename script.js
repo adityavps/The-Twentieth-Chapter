@@ -127,10 +127,12 @@
   const SPOTIFY_EMBED_URL="https://open.spotify.com/embed/playlist/6hsGNTF4cAAcn42sR1ZiTK?utm_source=generator&si=00f070f46b4c4e4b";
   let backgroundWanted=false;
   let spotifyController=null;
+  let spotifyIframeAPI=null;
   let spotifyPlaybackIsPlaying=false;
   let playlistPageActive=false;
   let spotifyFallbackActive=false;
   let spotifyEmbedReady=false;
+  let spotifyApiLoadStarted=false;
   let ambientResumeTimer=null;
   let spotifyReadyTimer=null;
   backgroundAudio.volume=0.42;
@@ -250,13 +252,23 @@
   function onPlaylistPageEntered(){
     playlistPageActive=true;
     if(spotifyFallbackActive){
-      // The basic iframe does not expose playback-state events, so compatibility mode
-      // pauses ambient music for this chapter rather than risking two tracks together.
+      // Create the fallback only after this chapter is visible. A Spotify iframe
+      // initialized inside a display:none page can choose a broken/narrow layout.
       if(!playlistFrame.querySelector(".spotify-fallback-player"))installSpotifyFallbackFrame();
       if(!backgroundAudio.paused)backgroundAudio.pause();
       updateBackgroundAudioUi(false);
       refreshBackgroundStatus();
       return;
+    }
+
+    // Lazy-load Spotify only after the chapter is displayed and has a real width.
+    // This avoids a zero-width iframe in normal and private browsing modes.
+    if(!spotifyEmbedReady && !spotifyController){
+      requestAnimationFrame(()=>{
+        if(!playlistPageActive || spotifyFallbackActive || spotifyEmbedReady || spotifyController)return;
+        if(spotifyIframeAPI)initializeSpotifyEmbed(spotifyIframeAPI);
+        else if(!spotifyApiLoadStarted)loadSpotifyIframeAPI();
+      });
     }
     if(spotifyPlaybackIsPlaying)pauseAmbientForForeground();
     else maybeResumeAmbient(80);
@@ -295,16 +307,20 @@
 
   function installSpotifyFallbackFrame(){
     if(playlistFrame.querySelector(".spotify-fallback-player"))return;
-    // Spotify's API replaces its mount node with an iframe. Always anchor fallback
-    // markup to the stable playlist card, not to that replaceable mount node.
+    // This function is only called while the music chapter is visible, so Spotify
+    // measures the same real viewport in regular and private browsing modes.
     playlistFrame.querySelectorAll("iframe").forEach(frame=>frame.remove());
     if(spotifyHost && spotifyHost.isConnected)spotifyHost.remove();
     const frame=document.createElement("iframe");
+    const measuredWidth=Math.max(240,Math.round(playlistFrame.getBoundingClientRect().width-2));
+    const measuredHeight=Math.max(220,Math.round(playlistFrame.getBoundingClientRect().height-2));
     frame.className="spotify-fallback-player";
     frame.title="Our shared Spotify playlist";
     frame.src=SPOTIFY_EMBED_URL;
-    frame.width="100%";
-    frame.height=window.matchMedia("(max-width: 520px)").matches?"352":"420";
+    // Supply a concrete initial viewport and keep the element fluid through CSS.
+    // This avoids the embed choosing a compact layout from a zero-size parent.
+    frame.width=String(measuredWidth);
+    frame.height=String(measuredHeight);
     frame.setAttribute("referrerpolicy","strict-origin-when-cross-origin");
     frame.setAttribute("allow","autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture");
     frame.setAttribute("loading","eager");
@@ -320,30 +336,45 @@
     spotifyFallbackActive=true;
     if(spotifyReadyTimer){clearTimeout(spotifyReadyTimer);spotifyReadyTimer=null;}
 
-    // A controller may exist without ever completing initialization on some mobile
-    // browsers. Tear it down before installing the standard Spotify iframe.
+    // A controller may exist without completing initialization. Tear it down before
+    // switching to the plain embed. Do not create the replacement while the page is
+    // hidden; the next page entry will create it at the correct measured dimensions.
     if(spotifyController){
       try{spotifyController.destroy();}catch(_error){}
       spotifyController=null;
     }
-    installSpotifyFallbackFrame();
-    spotifyHelpNote.textContent="Spotify's standard playlist player is ready. This browser did not provide reliable playback-state events, so the background song stays paused while this chapter is open to prevent overlapping audio.";
+    // The fallback no longer has observable playback events, so discard controller
+    // state instead of treating it as a still-playing Spotify session.
+    spotifyPlaybackIsPlaying=false;
+    spotifyHelpNote.textContent="Spotify's standard playlist player is ready. If this browser blocks playback-state events, the background song stays paused while this chapter is open to prevent overlapping audio.";
     if(playlistPageActive){
+      installSpotifyFallbackFrame();
       if(!backgroundAudio.paused)backgroundAudio.pause();
       updateBackgroundAudioUi(false);
       refreshBackgroundStatus();
+    }else{
+      playlistFrame.classList.remove("is-ready","uses-fallback");
+      spotifyStatus.hidden=false;
+      spotifyStatus.innerHTML="Your playlist is ready when you return.<br><span>Turn back to this chapter to open Spotify.</span>";
     }
   }
 
   function initializeSpotifyEmbed(IFrameAPI){
-    if(spotifyFallbackActive || spotifyController || !spotifyHost)return;
+    if(IFrameAPI)spotifyIframeAPI=IFrameAPI;
+    // The API script can finish loading just after the user leaves this chapter.
+    // Save the API object and wait until the next visible entry to measure/create it.
+    if(!playlistPageActive || spotifyFallbackActive || spotifyController || !spotifyHost)return;
     if(!IFrameAPI || typeof IFrameAPI.createController!=="function"){
       activateSpotifyFallback();
       return;
     }
     try{
-      const height=window.matchMedia("(max-width: 520px)").matches?"352":"420";
-      IFrameAPI.createController(spotifyHost,{uri:SPOTIFY_PLAYLIST_URI,width:"100%",height},controller=>{
+      // Spotify documents width/height as pixel dimensions. Measure only after the
+      // music page is active so hidden-page layout cannot initialise as 0px wide.
+      const bounds=spotifyHost.getBoundingClientRect();
+      const width=Math.max(240,Math.round(bounds.width));
+      const height=Math.max(220,Math.round(playlistFrame.getBoundingClientRect().height-2));
+      IFrameAPI.createController(spotifyHost,{uri:SPOTIFY_PLAYLIST_URI,width,height},controller=>{
         // The timeout may already have installed the fallback while Spotify was
         // still creating its controller. Never let a late callback replace it.
         if(spotifyFallbackActive){try{controller.destroy();}catch(_error){}return;}
@@ -374,15 +405,18 @@
   }
 
   function loadSpotifyIframeAPI(){
-    if(!spotifyHost)return;
-    // Arm a watchdog BEFORE loading the third-party script. Unlike the old timer,
-    // this also covers the case where a controller object is returned but one of
-    // its event subscriptions throws (which otherwise leaves the loader forever).
-    // Mobile browsers with tracking protection may never dispatch Spotify's API
-    // callback at all, so this timer must not depend on that callback existing.
+    if(!spotifyHost || spotifyApiLoadStarted || spotifyFallbackActive || spotifyEmbedReady)return;
+    // Defensive check: the API must never be asked to size an embed in a hidden
+    // chapter. onPlaylistPageEntered runs after display:block; requestAnimationFrame
+    // gives the browser one layout pass before this measurement.
+    if(!playlistPageActive || playlistFrame.getBoundingClientRect().width<100){return;}
+    spotifyApiLoadStarted=true;
+
+    // Arm a watchdog before loading the third-party script. This covers a blocked
+    // API, a partial controller, or missing readiness events in privacy modes.
     spotifyReadyTimer=setTimeout(()=>{
       if(!spotifyEmbedReady && !spotifyFallbackActive)activateSpotifyFallback();
-    },7500);
+    },9000);
 
     window.onSpotifyIframeApiReady=initializeSpotifyEmbed;
     const apiScript=document.createElement("script");
@@ -415,8 +449,7 @@
   voice.addEventListener("loadedmetadata",()=>$("#voiceMissing").hidden=true);
   voice.addEventListener("error",()=>{$("#voiceMissing").hidden=false});
 
-  loadSpotifyIframeAPI();
-
+  // Spotify initialisation is intentionally lazy: wait until the playlist chapter is visible.
   // Load the user's original photos eagerly when their visible frame is activated.
   // CSS keeps each image in the layout while it loads (opacity 0); display:none would
   // prevent some mobile browsers from requesting lazy images inside hidden cards.
