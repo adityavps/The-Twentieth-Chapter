@@ -11,7 +11,7 @@ PERSONAL ASSETS INSTALLED
 
 BEFORE SHARING
 [x] Intended answers for all 15 quiz questions confirmed by the site owner.
-[ ] Test the published site on mobile: QR scanning, photo framing, audio start/stop, voice playback, answer reveals, password preview, page flip and scheduled reveal.
+[ ] Test the published site on mobile: QR scanning, photo framing, audio pause/resume across the playlist chapter, voice playback, answer reveals, password preview, page flip and scheduled reveal.
 [ ] Make sure you have permission to use the background song on a public website.
 
 [✓] Quiz answer key confirmed by site owner; reveal, final collage, and passcode use the same 15 answers.

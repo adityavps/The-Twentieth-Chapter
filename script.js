@@ -66,6 +66,7 @@
     }
     navigationReady=true;
     if(index===3) stopBackgroundSongForPlaylist();
+    else if(oldIndex===3) resumeBackgroundSongAfterPlaylist();
   }
   $("#prevPage").addEventListener("click",()=>showPage(current-1,"prev"));
   $("#nextPage").addEventListener("click",()=>showPage(current+1,"next"));
@@ -88,7 +89,7 @@
   });
 
   // Swipe horizontally to turn pages. Interactive controls and embeds are excluded.
-  const interactiveSelector="button,a,input,textarea,select,iframe,audio,video,[contenteditable='true']";
+  const interactiveSelector="button,a,input,textarea,select,iframe,audio,video,[role='button'],[contenteditable='true']";
   pages.forEach(page=>{
     let start=null;
     page.addEventListener("pointerdown",event=>{
@@ -116,7 +117,7 @@
     if(e.key==="ArrowLeft"&&!e.target.matches("input,textarea,button,a,iframe,audio,video"))showPage(current-1,"prev");
   });
   const backgroundAudio=$("#violinAudio"), backgroundButton=$("#violinButton"), soundToggle=$("#soundToggle"), wave=$(".sound-wave");
-  let playlistReached=false;
+  let resumeBackgroundAfterPlaylist=false;
   backgroundAudio.volume=0.42;
   function updateBackgroundAudioUi(isPlaying){
     backgroundButton.textContent=isPlaying?"Ⅱ":"▶";
@@ -125,7 +126,7 @@
     wave.classList.toggle("playing",isPlaying);
   }
   function startBackgroundSong(){
-    if(playlistReached || current===3){return;}
+    if(current===3)return;
     if(!backgroundAudio.getAttribute("src")){
       $("#backgroundAudioStatus").textContent="The background song file could not be found.";
       return;
@@ -133,26 +134,43 @@
     if(!backgroundAudio.paused)return;
     backgroundAudio.play().then(()=>{
       updateBackgroundAudioUi(true);
-      $("#backgroundAudioStatus").textContent="Your background song is playing softly. It will pause when the playlist chapter opens.";
+      $("#backgroundAudioStatus").textContent="Your background song is playing softly. It will pause for the shared playlist and resume when you leave this chapter.";
     }).catch(()=>{
       $("#backgroundAudioStatus").textContent="The browser did not start audio. Tap the sound control to try again.";
       updateBackgroundAudioUi(false);
     });
   }
   function stopBackgroundSongForPlaylist(){
-    playlistReached=true;
+    // pause() preserves currentTime, so playback can resume at this exact position later.
+    resumeBackgroundAfterPlaylist=!backgroundAudio.paused && !backgroundAudio.ended;
     if(!backgroundAudio.paused)backgroundAudio.pause();
     backgroundButton.disabled=true;
     soundToggle.disabled=true;
-    backgroundButton.setAttribute("aria-label","The background song stops at the playlist chapter");
     updateBackgroundAudioUi(false);
-    $("#backgroundAudioStatus").textContent="Paused here so the YouTube Music playlist can take over.";
+    $("#backgroundAudioStatus").textContent="Paused for the shared playlist. The background song will resume from this point when you leave this chapter.";
+  }
+  function resumeBackgroundSongAfterPlaylist(){
+    const shouldResume=resumeBackgroundAfterPlaylist;
+    resumeBackgroundAfterPlaylist=false;
+    backgroundButton.disabled=false;
+    soundToggle.disabled=false;
+    if(!shouldResume){
+      $("#backgroundAudioStatus").textContent="The background song is paused. Use Sound to start it whenever you like.";
+      updateBackgroundAudioUi(false);
+      return;
+    }
+    // The media element's currentTime is intentionally not reset; play() resumes where pause() left it.
+    backgroundAudio.play().then(()=>{
+      updateBackgroundAudioUi(true);
+      $("#backgroundAudioStatus").textContent="Your background song has resumed from the same point. ♡";
+    }).catch(()=>{
+      updateBackgroundAudioUi(false);
+      $("#backgroundAudioStatus").textContent="Your browser paused the song during the chapter change. Tap Sound to resume it from where it stopped.";
+    });
   }
   function toggleBackgroundSong(){
-    if(playlistReached || current===3){
-      if(!backgroundAudio.paused)backgroundAudio.pause();
-      updateBackgroundAudioUi(false);
-      toast("The background song pauses here so the playlist can take over.");
+    if(current===3){
+      toast("The shared playlist has the music here. The background song resumes when you leave this chapter.");
       return;
     }
     if(backgroundAudio.paused)startBackgroundSong();
@@ -172,34 +190,83 @@
     $("#backgroundAudioStatus").textContent="The background song could not be loaded. Check assets/music/background-song.mp3.";
     updateBackgroundAudioUi(false);
   });
-  // YouTube runs in a cross-origin iframe; the background song is paused on entering its chapter,
-  // rather than trying to guess the playlist player's playback state.
+  // YouTube runs in a cross-origin iframe; the local track is paused on entry and resumes on exit.
   // Voice-note placeholder stays visible until the real file loads.
   const voice=$("#voiceAudio");
   voice.addEventListener("loadedmetadata",()=>$("#voiceMissing").hidden=true);
   voice.addEventListener("error",()=>{$("#voiceMissing").hidden=false});
-  // Load the user's original photos without cropping or replacing them with generated substitutes.
+  // Load the user's original photos eagerly when their visible frame is activated.
+  // CSS keeps each image in the layout while it loads (opacity 0); display:none would
+  // prevent some mobile browsers from requesting lazy images inside hidden cards.
   $$(".real-photo").forEach(img=>{
-    img.addEventListener("load",()=>img.closest(".photo-frame").classList.add("has-photo"));
-    img.addEventListener("error",()=>img.closest(".photo-frame").classList.remove("has-photo"));
-    img.src=img.dataset.src;
+    const frame=img.closest(".photo-frame");
+    const markLoaded=()=>{frame.classList.remove("photo-error");frame.classList.add("has-photo");};
+    const markFailed=()=>{
+      frame.classList.remove("has-photo");
+      frame.classList.add("photo-error");
+      // A failed file path should never fail silently; this hint is hidden when the photo loads.
+      const placeholder=frame.querySelector(".photo-placeholder");
+      if(placeholder && !placeholder.querySelector(".photo-error-hint")){
+        const hint=document.createElement("small");
+        hint.className="photo-error-hint";
+        hint.textContent=`Photo couldn't load. Check: ${img.dataset.src || "the photo file path"}`;
+        placeholder.appendChild(hint);
+      }
+    };
+    img.addEventListener("load",markLoaded);
+    img.addEventListener("error",markFailed);
+    img.loading="eager";
+    img.decoding="async";
+    if(img.dataset.src)img.src=img.dataset.src;
+    if(img.complete){
+      if(img.naturalWidth>0)markLoaded();
+      else if(img.currentSrc)markFailed();
+    }
   });
   const letterImg = new Image();
   letterImg.onload=()=>{$("#letterPhoto").innerHTML="";letterImg.alt="Photograph of the handwritten birthday letter";letterImg.style.width="100%";letterImg.style.height="auto";$("#letterPhoto").appendChild(letterImg)};
   letterImg.onerror=()=>{};
   letterImg.src="assets/photos/handwritten-letter.jpg";
-  // Door / peephole reveal: first childhood photo, second childhood photo, then a two-photo recent collage.
-  const door=$("#memoryDoor"), reveal=$("#memoryReveal");
-  let memoryIndex=0;
-  $("#knockButton").addEventListener("click",()=>{
-    if(!door.classList.contains("open-peek")){
-      door.classList.add("open-peek");$("#doorHint").textContent="The peephole opens… a little piece of the past.";$("#knockButton").textContent="Look through the peephole ♡";
-    } else {
-      reveal.hidden=false;door.style.display="none";$("#knockButton").style.display="none";$("#doorHint").style.display="none";
-      setMemory(0);reveal.scrollIntoView({behavior:"smooth",block:"start"});
+  // One gentle knock on either the illustrated peephole or the instruction button
+  // opens the childhood-photo sequence. The actual peephole is keyboard-accessible too.
+  const door=$("#memoryDoor"), reveal=$("#memoryReveal"), peephole=$("#peephole"), knockButton=$("#knockButton");
+  let memoryIndex=0, memoryOpening=false;
+  function openFirstMemory(){
+    if(memoryOpening || !reveal.hidden)return;
+    memoryOpening=true;
+    door.classList.add("open-peek");
+    peephole.setAttribute("aria-pressed","true");
+    $("#doorHint").textContent="The peephole opens… your first memory is here.";
+    knockButton.disabled=true;
+    knockButton.textContent="Opening your first memory… ♡";
+    window.setTimeout(()=>{
+      reveal.hidden=false;
+      door.style.display="none";
+      knockButton.style.display="none";
+      $("#doorHint").style.display="none";
+      setMemory(0);
+      reveal.scrollIntoView({behavior:"smooth",block:"start"});
+      memoryOpening=false;
+    },520);
+  }
+  knockButton.addEventListener("click",openFirstMemory);
+  peephole.addEventListener("click",openFirstMemory);
+  peephole.addEventListener("keydown",event=>{
+    if(event.key==="Enter" || event.key===" "){
+      event.preventDefault();
+      openFirstMemory();
     }
   });
-  function setMemory(i){const cards=$$(".memory-card");memoryIndex=(i+cards.length)%cards.length;cards.forEach((c,n)=>c.classList.toggle("active",n===memoryIndex));$("#memoryCounter").textContent=`${memoryIndex+1} / ${cards.length}`;$("#memoryPrev").disabled=memoryIndex===0;$("#memoryNext").textContent=memoryIndex===cards.length-1?"Back to first ↻":"Next →"}
+  function setMemory(i){
+    const cards=$$(".memory-card");
+    memoryIndex=(i+cards.length)%cards.length;
+    cards.forEach((c,n)=>c.classList.toggle("active",n===memoryIndex));
+    // Reaffirm eager loading when a memory card becomes visible on mobile browsers.
+    $$(".real-photo",cards[memoryIndex]).forEach(img=>{img.loading="eager";if(!img.currentSrc && img.dataset.src)img.src=img.dataset.src;});
+    $("#memoryCounter").textContent=`${memoryIndex+1} / ${cards.length}`;
+    $("#memoryPrev").disabled=memoryIndex===0;
+    $("#memoryNext").textContent=memoryIndex===cards.length-1?"Back to first ↻":"Next →";
+  }
   $("#memoryPrev").addEventListener("click",()=>setMemory(memoryIndex-1));$("#memoryNext").addEventListener("click",()=>setMemory(memoryIndex+1));
   // Favourites quiz. Known answers are explicitly separated from invented details.
   const questions = [
