@@ -41,3 +41,7 @@ This site is static and does not send quiz answers to a server. Anything uploade
 
 DESIGN REFERENCES
 `assets/references/` preserves the nine reference images in the original order and includes several supplementary aesthetic references. They are reference material, not necessarily the actual photographs/voice recording. Do not use mockups or blurred sample portraits as the real personal photos.
+
+
+## Playlist update (v8)
+The music chapter now embeds the supplied Spotify playlist `6hsGNTF4cAAcn42sR1ZiTK`; the direct Spotify playlist link remains as a fallback. The background song and voice-note behavior are unchanged.
